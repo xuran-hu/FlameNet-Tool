@@ -54,7 +54,7 @@ import {
   sampleContext, standardise, standardiseInto, windowStarts,
 // ?v= must match index.html's. A fresh app.js next to a cached pipeline.js is
 // worse than both being stale: the numeric core and its caller would disagree.
-} from "./pipeline.js?v=5";
+} from "./pipeline.js?v=6";
 
 const MODEL_DIR = "./model/";
 const ORT_ASSET_PATH = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/";
@@ -99,13 +99,6 @@ const SCENE_PRESETS = Object.freeze({
     detailKm: 53.76,
     pre: "2024-07-02", target: "2025-10-07",
     note: "SK · NBAC 56,369 ha · orbit 78 · reported IoU 0.71",
-  },
-  CA_2025_NT_523: {
-    label: "2025 · NT_523 · 55,504 ha", group: "Over 10,000 ha",
-    latitude: 62.204, longitude: -112.8975,
-    detailKm: 51.2,
-    pre: "2024-06-30", target: "2025-11-04",
-    note: "NT · NBAC 55,504 ha · orbit 49 · reported IoU 0.75",
   },
   CA_2025_SK_702: {
     label: "2025 · SK_702 · 34,511 ha", group: "Over 10,000 ha",
@@ -313,6 +306,7 @@ const SCENE_PRESETS = Object.freeze({
 });
 
 
+
 /* Every preset is a fire of the held-out 2025 season, carrying the pre- and
  * post-fire dates the dataset loader itself chose for that tile, so running one
  * reproduces the pair the reported metrics came from. The IoU in each note is
@@ -510,7 +504,7 @@ function markSceneCustom(message = "Custom scene · coordinates, dates or window
 // The fire the page opens on. Not the largest — a first run should finish in a
 // reasonable time, and this is the one event here with an independent perimeter
 // to compare against.
-const DEFAULT_PRESET = "CA_2025_NT_523";
+const DEFAULT_PRESET = "CA_2025_SK_429";
 
 // The search radii a preset falls back to, matching index.html's selected
 // options. A preset that does not narrow them must still reset them, or the

@@ -54,7 +54,8 @@ and says which orbits it used either way.
 
 Earth Engine is asked for one stride (128 px) more than the window on every
 side, and that band is cropped off after inference. Without it the Gaussian
-blend has almost no support at the border — measured on preset NT 523, the
+blend has almost no support at the border — measured on a 51 km window in the
+Northwest Territories, the
 weight sum runs from **1.47 in the middle to 0.018 in the corner**, so single
 windows decide the border pixels and the stride lattice appears as a blocky
 ring. With the margin the weight sum across the displayed window is flat
@@ -73,7 +74,7 @@ Radar sees through cloud, so there is nothing to mask for weather — but a
 window can still run off the edge of a swath. Those pixels are filled with the
 channel mean, which the network reads as "no change" and would otherwise score
 as unburned, so they are **excluded** and reported as outside the swath, which
-is what the Sentinel-2 page does with cloud. On preset NT 523 that is 4.7 % of
+is what the Sentinel-2 page does with cloud. On the same scene that is 4.7 % of
 the window, a diagonal wedge in one corner.
 
 ## Samples
@@ -82,14 +83,14 @@ the window, a diagonal wedge in one corner.
 the NBAC reference perimeter and the prediction, with the per-tile IoU the
 paper reports. It is a starting point, not the evidence: the gallery is
 filtered to fires at or above IoU 0.5 (`make_web_gallery.py --min-iou`), while
-the demonstrator itself offers all 32 presets, whose notes carry the IoU each
+the demonstrator itself offers all 31 presets, whose notes carry the IoU each
 one scored across the full range of the season, and any coordinates and dates
 a reader enters. Each card links into the demonstrator with that fire
 preselected (`./?preset=CA_2025_…`).
 
 ## The preset list
 
-32 fires from the 2025 test season, grouped by burned area, spanning
+31 fires from the 2025 test season, grouped by burned area, spanning
 **176 ha to 142,975 ha**, each carrying the pre and post dates the dataset
 loader itself selected for that tile — so running a preset reproduces the pair
 the reported metrics came from, and the note on it says what IoU to expect. The
