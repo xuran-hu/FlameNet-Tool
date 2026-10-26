@@ -1,0 +1,57 @@
+{
+  "name": "FlameNet-S1",
+  "checkpoint": "runs/mode_early/epoch295_iou0.5400.pth",
+  "checkpoint_md5": "686b3c8971c0c8a7cbaf9de7330b2cb7",
+  "opset": 17,
+  "params": 589851,
+  "in_ch_per_phase": 2,
+  "bands": [
+    "VH",
+    "VV"
+  ],
+  "units": "dB",
+  "collection": "COPERNICUS/S1_GRD",
+  "instrument_mode": "IW",
+  "polarisation": [
+    "VV",
+    "VH"
+  ],
+  "scale_m": 20,
+  "mean": [
+    -13.38,
+    -6.54
+  ],
+  "std": [
+    4.21,
+    3.87
+  ],
+  "nodata_fill": "channel_mean",
+  "patch_size": 256,
+  "stride": 128,
+  "ctx_size": 256,
+  "ctx_ch": 32,
+  "btn_size": 16,
+  "min_cc_area": 50,
+  "threshold": 0.5,
+  "train_years": [
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023
+  ],
+  "val_years": [
+    2024
+  ],
+  "test_years": [
+    2025
+  ],
+  "pre_rule": "previous year, same seasonal window",
+  "prefer_same_relative_orbit": true,
+  "graphs": {
+    "ctx": "flamenet_s1_ctx.onnx",
+    "patch": "flamenet_s1_patch.onnx"
+  }
+}

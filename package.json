@@ -1,0 +1,12 @@
+{
+  "name": "flamenet-s1-earth-engine",
+  "private": true,
+  "type": "module",
+  "description": "Browser deployment of FlameNet on Earth Engine Sentinel-1 imagery",
+  "scripts": {
+    "test": "node --test test/pipeline.test.mjs test/wiring.test.mjs test/endtoend.test.mjs"
+  },
+  "devDependencies": {
+    "onnxruntime-web": "1.23.2"
+  }
+}

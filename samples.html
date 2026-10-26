@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlameNet · sample results</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0 auto; max-width: 1100px; padding: 2rem 1.25rem 4rem;
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  h1 { font-size: 1.5rem; margin: 0 0 .35rem; }
+  .lede { color: #555; margin: 0 0 2rem; }
+  .sample { border-top: 1px solid #ddd; padding-top: 1.4rem; margin-top: 2rem; }
+  .sample h2 { font-size: 1.1rem; margin: 0 0 .2rem; }
+  .meta { color: #555; margin: 0 0 .9rem; font-size: .9rem; }
+  .strip { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  figure { margin: 0; }
+  figure img { width: 100%; height: auto; display: block; background: #000; border-radius: 3px; }
+  figcaption { font-size: .78rem; color: #666; margin-top: .3rem; }
+  .run a { font-size: .9rem; }
+  footer { margin-top: 3rem; color: #777; font-size: .85rem; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #111; color: #e6e6e6; }
+    .lede, .meta, figcaption, footer { color: #9a9a9a; }
+    .sample { border-color: #333; }
+  }
+</style>
+</head>
+<body>
+  <h1>FlameNet · sample results</h1>
+  <p class="lede">Sentinel-1 burned-area mapping on fires of the held-out 2025 season.
+  Each prediction is checkpoint ep295 at threshold 0.5, run on the exact pre/post pair
+  the dataset loader pairs for that fire, and the IoU shown is the per-fire number the
+  paper reports. The demonstrator runs any of its 32 preset fires — which span the full
+  accuracy range of the test season — or any coordinates and dates you enter.
+  <a href="./">Try it yourself →</a></p>
+    <section class="sample">
+      <h2>SK 429 · 142,975 ha</h2>
+      <p class="meta">2025-04-12 → 2025-09-03 · orbit 107 ·
+        window 79.36 km · burned 25.7% of the tile ·
+        <b>IoU 0.786</b></p>
+      <div class="strip">
+        <figure><img src="samples/CA_2025_SK_429/pre.jpg" alt="Pre-fire · VV backscatter for CA_2025_SK_429" loading="lazy">
+          <figcaption>Pre-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_SK_429/post.jpg" alt="Post-fire · VV backscatter for CA_2025_SK_429" loading="lazy">
+          <figcaption>Post-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_SK_429/flamenet.jpg" alt="FlameNet · green TP, red FP, white FN for CA_2025_SK_429" loading="lazy">
+          <figcaption>FlameNet · green TP, red FP, white FN</figcaption></figure>
+        <figure><img src="samples/CA_2025_SK_429/gt.jpg" alt="NBAC reference perimeter for CA_2025_SK_429" loading="lazy">
+          <figcaption>NBAC reference perimeter</figcaption></figure>
+      </div>
+      <p class="run"><a href="./?preset=CA_2025_SK_429">Run this fire in the browser →</a></p>
+    </section>
+    <section class="sample">
+      <h2>SK 354 · 56,369 ha</h2>
+      <p class="meta">2024-07-02 → 2025-10-07 · orbit 78 ·
+        window 53.76 km · burned 26.9% of the tile ·
+        <b>IoU 0.713</b></p>
+      <div class="strip">
+        <figure><img src="samples/CA_2025_SK_354/pre.jpg" alt="Pre-fire · VV backscatter for CA_2025_SK_354" loading="lazy">
+          <figcaption>Pre-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_SK_354/post.jpg" alt="Post-fire · VV backscatter for CA_2025_SK_354" loading="lazy">
+          <figcaption>Post-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_SK_354/flamenet.jpg" alt="FlameNet · green TP, red FP, white FN for CA_2025_SK_354" loading="lazy">
+          <figcaption>FlameNet · green TP, red FP, white FN</figcaption></figure>
+        <figure><img src="samples/CA_2025_SK_354/gt.jpg" alt="NBAC reference perimeter for CA_2025_SK_354" loading="lazy">
+          <figcaption>NBAC reference perimeter</figcaption></figure>
+      </div>
+      <p class="run"><a href="./?preset=CA_2025_SK_354">Run this fire in the browser →</a></p>
+    </section>
+    <section class="sample">
+      <h2>ON 630 · 9,012 ha</h2>
+      <p class="meta">2025-05-16 → 2025-09-13 · orbit 92 ·
+        window 25.60 km · burned 23.3% of the tile ·
+        <b>IoU 0.521</b></p>
+      <div class="strip">
+        <figure><img src="samples/CA_2025_ON_630/pre.jpg" alt="Pre-fire · VV backscatter for CA_2025_ON_630" loading="lazy">
+          <figcaption>Pre-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_ON_630/post.jpg" alt="Post-fire · VV backscatter for CA_2025_ON_630" loading="lazy">
+          <figcaption>Post-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_ON_630/flamenet.jpg" alt="FlameNet · green TP, red FP, white FN for CA_2025_ON_630" loading="lazy">
+          <figcaption>FlameNet · green TP, red FP, white FN</figcaption></figure>
+        <figure><img src="samples/CA_2025_ON_630/gt.jpg" alt="NBAC reference perimeter for CA_2025_ON_630" loading="lazy">
+          <figcaption>NBAC reference perimeter</figcaption></figure>
+      </div>
+      <p class="run"><a href="./?preset=CA_2025_ON_630">Run this fire in the browser →</a></p>
+    </section>
+    <section class="sample">
+      <h2>PC 655 · 3,695 ha</h2>
+      <p class="meta">2024-06-06 → 2025-06-25 · orbit 49 ·
+        window 17.92 km · burned 20.9% of the tile ·
+        <b>IoU 0.779</b></p>
+      <div class="strip">
+        <figure><img src="samples/CA_2025_PC_655/pre.jpg" alt="Pre-fire · VV backscatter for CA_2025_PC_655" loading="lazy">
+          <figcaption>Pre-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_PC_655/post.jpg" alt="Post-fire · VV backscatter for CA_2025_PC_655" loading="lazy">
+          <figcaption>Post-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_PC_655/flamenet.jpg" alt="FlameNet · green TP, red FP, white FN for CA_2025_PC_655" loading="lazy">
+          <figcaption>FlameNet · green TP, red FP, white FN</figcaption></figure>
+        <figure><img src="samples/CA_2025_PC_655/gt.jpg" alt="NBAC reference perimeter for CA_2025_PC_655" loading="lazy">
+          <figcaption>NBAC reference perimeter</figcaption></figure>
+      </div>
+      <p class="run"><a href="./?preset=CA_2025_PC_655">Run this fire in the browser →</a></p>
+    </section>
+    <section class="sample">
+      <h2>MB 36 · 2,556 ha</h2>
+      <p class="meta">2025-05-20 → 2025-09-24 · orbits 136→63 (mismatched) ·
+        window 17.92 km · burned 17.6% of the tile ·
+        <b>IoU 0.892</b></p>
+      <div class="strip">
+        <figure><img src="samples/CA_2025_MB_36/pre.jpg" alt="Pre-fire · VV backscatter for CA_2025_MB_36" loading="lazy">
+          <figcaption>Pre-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_MB_36/post.jpg" alt="Post-fire · VV backscatter for CA_2025_MB_36" loading="lazy">
+          <figcaption>Post-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_MB_36/flamenet.jpg" alt="FlameNet · green TP, red FP, white FN for CA_2025_MB_36" loading="lazy">
+          <figcaption>FlameNet · green TP, red FP, white FN</figcaption></figure>
+        <figure><img src="samples/CA_2025_MB_36/gt.jpg" alt="NBAC reference perimeter for CA_2025_MB_36" loading="lazy">
+          <figcaption>NBAC reference perimeter</figcaption></figure>
+      </div>
+      <p class="run"><a href="./?preset=CA_2025_MB_36">Run this fire in the browser →</a></p>
+    </section>
+    <section class="sample">
+      <h2>NT 189 · 832 ha</h2>
+      <p class="meta">2024-06-06 → 2025-10-11 · orbit 49 ·
+        window 17.92 km · burned 9.3% of the tile ·
+        <b>IoU 0.650</b></p>
+      <div class="strip">
+        <figure><img src="samples/CA_2025_NT_189/pre.jpg" alt="Pre-fire · VV backscatter for CA_2025_NT_189" loading="lazy">
+          <figcaption>Pre-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_NT_189/post.jpg" alt="Post-fire · VV backscatter for CA_2025_NT_189" loading="lazy">
+          <figcaption>Post-fire · VV backscatter</figcaption></figure>
+        <figure><img src="samples/CA_2025_NT_189/flamenet.jpg" alt="FlameNet · green TP, red FP, white FN for CA_2025_NT_189" loading="lazy">
+          <figcaption>FlameNet · green TP, red FP, white FN</figcaption></figure>
+        <figure><img src="samples/CA_2025_NT_189/gt.jpg" alt="NBAC reference perimeter for CA_2025_NT_189" loading="lazy">
+          <figcaption>NBAC reference perimeter</figcaption></figure>
+      </div>
+      <p class="run"><a href="./?preset=CA_2025_NT_189">Run this fire in the browser →</a></p>
+    </section>
+  <footer>Reference perimeters: NBAC (Canadian National Burned Area Composite).
+  Imagery: Copernicus Sentinel-1 IW GRD, σ⁰ in dB, 20 m.
+  Research prototype, not an operational product.</footer>
+</body>
+</html>
