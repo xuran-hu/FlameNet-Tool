@@ -50,7 +50,7 @@
 import { fromArrayBuffer } from "https://cdn.jsdelivr.net/npm/geotiff@2.1.3/+esm";
 import {
   blendWindow, blitChannel, chunkEdges, convertChannel, extractPatch,
-  gaussianWeight, normaliseBlend, removeSmallComponents, sarColour, sarRamp,
+  gaussianWeight, normaliseBlend, removeSmallComponents, sarGrey, sarRamp,
   sampleContext, standardise, standardiseInto, windowStarts,
 // ?v= must match index.html's. A fresh app.js next to a cached pipeline.js is
 // worse than both being stale: the numeric core and its caller would disagree.
@@ -1069,6 +1069,10 @@ async function fetchDetailWindow(image, grid, projectId, bands, quant, onProgres
   });
   const pre = makePhase();
   const post = makePhase();
+  // 1 where either phase was outside its swath. Taken from the raw int16,
+  // before convertChannel replaces NODATA with the channel mean and the
+  // information is gone.
+  const missing = new Uint8Array(plane);
 
   const blobs = [];
   let done = 0;
@@ -1097,6 +1101,17 @@ async function fetchDetailWindow(image, grid, projectId, bands, quant, onProgres
           + `${chunkW}×${chunkH} px chunk.`);
       }
       const geom = { targetWidth: pixels, chunkWidth: chunkW, chunkHeight: chunkH, row, col };
+      const preBand = raster.bands[0];
+      const postBand = raster.bands[nChannels];
+      for (let y = 0; y < chunkH; y += 1) {
+        const sourceRow = y * chunkW;
+        const targetRow = (row + y) * pixels + col;
+        for (let x = 0; x < chunkW; x += 1) {
+          if (preBand[sourceRow + x] === NODATA || postBand[sourceRow + x] === NODATA) {
+            missing[targetRow + x] = 1;
+          }
+        }
+      }
       for (const [phase, offset] of [[pre, 0], [post, nChannels]]) {
         for (let ch = 0; ch < nChannels; ch += 1) {
           blitChannel(raster.bands[offset + ch], phase.channels[ch],
@@ -1106,7 +1121,38 @@ async function fetchDetailWindow(image, grid, projectId, bands, quant, onProgres
       done += 1;
     }
   }
-  return { pre, post, blobs, requests: total };
+  return { pre, post, missing, blobs, requests: total };
+}
+
+
+/**
+ * Crop one plane out of a larger square window.
+ *
+ * `margin` is the band that was fetched for the blend's benefit and is not
+ * displayed; `size` is what remains. Returns the same array when there is no
+ * margin, so the largest window costs no extra copy.
+ */
+function cropPlane(plane, sourceSize, margin, size) {
+  if (!margin) return plane;
+  const out = new (plane.constructor)(size * size);
+  for (let y = 0; y < size; y += 1) {
+    const from = (y + margin) * sourceSize + margin;
+    out.set(plane.subarray(from, from + size), y * size);
+  }
+  return out;
+}
+
+/** The same crop for both phases and the observed-pixel mask. */
+function cropWindow(pre, post, keep, margin, size) {
+  const phase = ph => (margin
+    ? { width: size, height: size,
+        channels: ph.channels.map(c => cropPlane(c, ph.width, margin, size)) }
+    : ph);
+  return {
+    pre: phase(pre),
+    post: phase(post),
+    keep: keep ? cropPlane(keep, pre.width, margin, size) : null,
+  };
 }
 
 // ── inference ────────────────────────────────────────────────────────────────
@@ -1236,17 +1282,26 @@ async function runWorkflow() {
     // centred crop of the context window, so a patch's position inside the
     // context is exact rather than reprojected.
     const detailPx = detailPixels();
-    const contextPx = Math.round(contextKm() * 1000 / meta.scale_m);
+    // Inference runs on a margin and the margin is thrown away. Without it the
+    // Gaussian blend has almost no support at the window border -- the weight
+    // sum falls from 1.47 in the middle to 0.018 in the corner -- so a single
+    // window decides those pixels and the stride lattice shows up as blocks
+    // around the edge. One stride of margin gives every displayed pixel the
+    // overlap the interior has. It shrinks to nothing at the largest window,
+    // where the fetch is already at the Earth Engine cap.
+    const margin = Math.max(0, Math.min(meta.stride, (DETAIL_MAX_PX - detailPx) / 2));
+    const fetchPx = detailPx + 2 * margin;
+    const contextPx = fetchPx;
     const contextScale = (contextPx * meta.scale_m) / meta.ctx_size;
 
     setProgress(0.06, "Locating the window in UTM…");
     const [centreX, centreY] = await eeEvaluate(
       ee.Geometry.Point([longitude, latitude]).transform(crsCode, 0.01).coordinates());
-    const detailGrid = utmGrid(centreX, centreY, detailPx, meta.scale_m, crsCode);
+    const detailGrid = utmGrid(centreX, centreY, fetchPx, meta.scale_m, crsCode);
     const contextGrid = utmGrid(centreX, centreY, meta.ctx_size, contextScale, crsCode);
     const roi = ee.Geometry.Rectangle(
-      [centreX - detailPx * meta.scale_m / 2, centreY - detailPx * meta.scale_m / 2,
-        centreX + detailPx * meta.scale_m / 2, centreY + detailPx * meta.scale_m / 2],
+      [centreX - fetchPx * meta.scale_m / 2, centreY - fetchPx * meta.scale_m / 2,
+        centreX + fetchPx * meta.scale_m / 2, centreY + fetchPx * meta.scale_m / 2],
       crsCode, false);
     const contextRoi = ee.Geometry.Rectangle(
       [centreX - contextPx * meta.scale_m / 2, centreY - contextPx * meta.scale_m / 2,
@@ -1269,26 +1324,38 @@ async function runWorkflow() {
       detailImage(stack), detailGrid, projectId, bands, DB_QUANT,
       (done, total, size) => setProgress(0.26 + 0.18 * done / total,
         total > 1
-          ? `Fetching ${detailPx}×${detailPx} px at ${meta.scale_m} m — request `
+          ? `Fetching ${fetchPx}×${fetchPx} px at ${meta.scale_m} m — request `
             + `${done + 1} of ${total} (${size})…`
-          : `Fetching ${detailPx}×${detailPx} px at ${meta.scale_m} m…`));
+          : `Fetching ${fetchPx}×${fetchPx} px at ${meta.scale_m} m…`));
     state.pre = detail.pre;
     state.post = detail.post;
     state.sourceBlobs = detail.blobs;
+    state.missing = detail.missing;
 
     // Both of these need RAW reflectance, and runInference standardises the
     // planes in place to avoid a second 537 MB copy at the top window size.
     // So the two dual-polarisation panels are
     // rasterised to their canvases now rather than kept as arrays — the
     // canvases are at most 900 px a side, where the planes are up to 4096.
-    // No cloud mask: radar sees through cloud. Pixels outside the swath are
-    // filled with the channel mean and will read as unburned, which is why the
-    // summary reports each scene's no-data fraction.
-    state.keep = null;
-    const preRamp = sarRamp(state.pre.channels);
-    const postRamp = sarRamp(state.post.channels);
-    renderToCanvas(elements.preCanvas, i => sarColour(state.pre.channels, preRamp, i));
-    renderToCanvas(elements.currentCanvas, i => sarColour(state.post.channels, postRamp, i));
+    // No cloud mask -- radar sees through cloud -- but a window can still run
+    // off the edge of a swath, and those pixels are filled with the channel
+    // mean, which the model reads as "no change" and would score as unburned.
+    // They are excluded instead, which is what the Sentinel-2 page does with
+    // cloud. 1 = seen in both phases.
+    state.keep = state.missing
+      ? Uint8Array.from(state.missing, flag => (flag ? 0 : 1))
+      : null;
+    // VV in grey. A VV/VH/ratio composite looks richer but reads worse: the
+    // burn signal here is a drop in backscatter, and brightness shows that
+    // directly, while a colour composite turns it into a hue shift.
+    // crop to the displayed window BEFORE standardiseInto consumes the raw dB
+    const display = cropWindow(state.pre, state.post, state.keep, margin, detailPx);
+    const vv = state.meta.bands.indexOf("VV");
+    const preRamp = sarRamp(display.pre.channels, vv);
+    const postRamp = sarRamp(display.post.channels, vv);
+    const shown = { width: detailPx, height: detailPx };
+    renderToCanvas(elements.preCanvas, i => sarGrey(display.pre.channels, preRamp, i, vv), false, shown);
+    renderToCanvas(elements.currentCanvas, i => sarGrey(display.post.channels, postRamp, i, vv), false, shown);
 
     setProgress(0.46, `Fetching the ${contextKm().toFixed(0)} km context thumbnail…`);
     const contextBlob = await computePixels(
@@ -1299,7 +1366,7 @@ async function runWorkflow() {
     state.ctxPost = context.post;
 
     const geometry = {
-      detailPixels: detailPx,
+      detailPixels: fetchPx,
       contextPixels: contextPx,
       // The detail window is centred in the context window.
       detailOriginRow: (contextPx - detailPx) / 2,
@@ -1311,7 +1378,14 @@ async function runWorkflow() {
 
     setProgress(0.56, `Loading ${meta.name}…`);
     await createSessions();
-    state.probability = await runInference(geometry);
+    const full = await runInference(geometry);
+    // Everything displayed from here on is the inner window: the margin was
+    // only ever there to give its border pixels company.
+    state.probability = cropPlane(full, fetchPx, margin, detailPx);
+    state.pre = display.pre;
+    state.post = display.post;
+    state.keep = display.keep;
+    state.geometry = { ...geometry, detailPixels: detailPx, margin };
 
     renderResults();
     setProgress(1, "Earth Engine retrieval and inference complete");
@@ -1333,9 +1407,9 @@ function previewGeometry(width, height) {
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
 }
 
-function renderToCanvas(canvas, pixelFunction, fullResolution = false) {
-  const sourceWidth = state.post.width;
-  const sourceHeight = state.post.height;
+function renderToCanvas(canvas, pixelFunction, fullResolution = false, source = null) {
+  const sourceWidth = source ? source.width : state.post.width;
+  const sourceHeight = source ? source.height : state.post.height;
   const target = fullResolution
     ? { width: sourceWidth, height: sourceHeight }
     : previewGeometry(sourceWidth, sourceHeight);
@@ -1430,9 +1504,13 @@ function renderResults() {
   elements.obscuredSummary.textContent = `${(obscured * pixelHa).toLocaleString(undefined, {
     maximumFractionDigits: 0,
   })} ha`;
-  elements.obscuredDetail.textContent = Number(selected.pre_orbit) === Number(selected.post_orbit)
-    ? `pre and post share relative orbit ${selected.post_orbit} — the geometry the model scores 0.489 IoU on`
-    : `pre orbit ${selected.pre_orbit} against post orbit ${selected.post_orbit} — mismatched, worth about 0.11 IoU`;
+  const orbits = Number(selected.pre_orbit) === Number(selected.post_orbit)
+    ? `orbit ${selected.post_orbit} in both phases`
+    : `orbit ${selected.pre_orbit} against ${selected.post_orbit} — mismatched, worth about 0.11 IoU`;
+  elements.obscuredDetail.textContent = obscured
+    ? `${(100 * obscured / mask.length).toFixed(1)}% outside the swath in one phase — `
+      + `excluded, not called unburned · ${orbits}`
+    : orbits;
 }
 
 // ── downloads ────────────────────────────────────────────────────────────────

@@ -280,52 +280,33 @@ export function normaliseBlend(accumulated, weightSum) {
 }
 
 /**
- * The dual-polarisation composite, in decibels.
+ * The grey stretch for a backscatter panel, in decibels.
  *
- * R = VV, G = VH, B = VV - VH, which is the standard Sentinel-1 RGB: the first
- * two carry absolute backscatter and the third is the polarisation ratio, the
- * thing a burn changes most. VV and VH share ONE 2-98% ramp so the colour keeps
- * meaning the ratio between them; the ratio plane gets its own, because it
- * lives in a few dB while the co-pol lives in twenty.
- *
- * The S2 page's test for a valid pixel -- any channel above zero -- cannot be
- * reused: sigma-nought in dB is negative everywhere, so that test would paint
- * the whole scene black.
+ * One 2-98% ramp over the displayed polarisation, taken over finite pixels
+ * only. The Sentinel-2 page's test for a valid pixel -- any channel above zero
+ * -- cannot be reused: sigma-nought in dB is negative everywhere, so that test
+ * would paint the whole scene black.
  */
-export function sarRamp(channels, maxSamples = 300000) {
-  const [vh, vv] = channels;
-  const stride = Math.max(1, Math.floor(vh.length / maxSamples));
-  const amp = [];
-  const ratio = [];
-  for (let i = 0; i < vh.length; i += stride) {
-    if (!Number.isFinite(vh[i]) || !Number.isFinite(vv[i])) continue;
-    amp.push(vh[i], vv[i]);
-    ratio.push(vv[i] - vh[i]);
+export function sarRamp(channels, index = 1, maxSamples = 300000) {
+  const band = channels[index];
+  const stride = Math.max(1, Math.floor(band.length / maxSamples));
+  const values = [];
+  for (let i = 0; i < band.length; i += stride) {
+    if (Number.isFinite(band[i])) values.push(band[i]);
   }
-  const pct = (values, q) => {
-    if (!values.length) return 0;
-    values.sort((a, b) => a - b);
-    return values[Math.min(values.length - 1, Math.floor(q * (values.length - 1)))];
-  };
-  const low = pct(amp, 0.02);
-  const high = pct(amp, 0.98);
-  const rLow = pct(ratio, 0.02);
-  const rHigh = pct(ratio, 0.98);
-  return {
-    low, high: high > low ? high : low + 1e-6,
-    ratioLow: rLow, ratioHigh: rHigh > rLow ? rHigh : rLow + 1e-6,
-  };
+  if (!values.length) return { low: 0, high: 1 };
+  values.sort((a, b) => a - b);
+  const at = q => values[Math.min(values.length - 1, Math.floor(q * (values.length - 1)))];
+  const low = at(0.02);
+  const high = at(0.98);
+  return { low, high: high > low ? high : low + 1e-6 };
 }
 
-/** One pixel of that composite. */
-export function sarColour(channels, ramp, index) {
-  const [vh, vv] = channels;
-  if (!Number.isFinite(vh[index]) || !Number.isFinite(vv[index])) return [0, 0, 0];
-  const to8 = (value, low, high) =>
-    Math.round(255 * Math.min(1, Math.max(0, (value - low) / (high - low))));
-  return [
-    to8(vv[index], ramp.low, ramp.high),
-    to8(vh[index], ramp.low, ramp.high),
-    to8(vv[index] - vh[index], ramp.ratioLow, ramp.ratioHigh),
-  ];
+/** One pixel of that panel: grey, so the eye reads brightness as backscatter. */
+export function sarGrey(channels, ramp, pixel, index = 1) {
+  const value = channels[index][pixel];
+  if (!Number.isFinite(value)) return [0, 0, 0];
+  const level = Math.round(255 * Math.min(1, Math.max(0,
+    (value - ramp.low) / (ramp.high - ramp.low))));
+  return [level, level, level];
 }

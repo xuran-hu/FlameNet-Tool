@@ -17,7 +17,7 @@ import { test } from "node:test";
 
 import {
   blendWindow, blitChannel, chunkEdges, convertChannel,
-  extractPatch, gaussianWeight, normaliseBlend, sarColour, sarRamp,
+  extractPatch, gaussianWeight, normaliseBlend, sarGrey, sarRamp,
   removeSmallComponents, sampleContext, standardise, standardiseInto,
   windowStarts,
 } from "../pipeline.js";
@@ -162,35 +162,32 @@ test("blendWindow and normaliseBlend reproduce the Gaussian blend", () => {
   closeTo(normaliseBlend(accumulated, weightSum), spec.expected, "blend", 1e-5);
 });
 
-test("sarRamp splits the amplitude and ratio stretches", () => {
-  const vh = Float32Array.from([-20, -18, -16, -14, -12]);
+test("sarRamp is a 2-98% stretch over the displayed polarisation", () => {
+  const vh = Float32Array.from([-30, -28, -26, -24, -22]);
   const vv = Float32Array.from([-12, -11, -10, -9, -8]);
-  const ramp = sarRamp([vh, vv]);
-  // one 2-98% ramp over BOTH polarisations, a separate one over VV-VH
-  assert.equal(ramp.low, -20, "amplitude low");
-  // the house percentile is values[floor(q * (n - 1))], not an interpolation:
-  // over the ten amplitudes that puts 98% at -9, and over the five ratios at 7
-  assert.equal(ramp.high, -9, "amplitude high");
-  assert.equal(ramp.ratioLow, 4, "ratio low");
-  assert.equal(ramp.ratioHigh, 7, "ratio high");
+  // the house percentile is values[floor(q * (n - 1))], not an interpolation
+  const vvRamp = sarRamp([vh, vv], 1);
+  assert.equal(vvRamp.low, -12, "VV low");
+  assert.equal(vvRamp.high, -9, "VV high");
+  // and it reads the band it is asked for, not whatever is first
+  const vhRamp = sarRamp([vh, vv], 0);
+  assert.equal(vhRamp.low, -30, "VH low");
+  assert.equal(vhRamp.high, -24, "VH high");
 });
 
-test("sarColour is R=VV, G=VH, B=VV-VH on those ramps", () => {
-  const vh = Float32Array.from([-20, -14]);
-  const vv = Float32Array.from([-8, -11]);
-  const ramp = { low: -20, high: -8, ratioLow: 3, ratioHigh: 12 };
-  assert.deepEqual(sarColour([vh, vv], ramp, 0), [255, 0, 255], "pixel 0");
-  assert.deepEqual(sarColour([vh, vv], ramp, 1), [191, 128, 0], "pixel 1");
+test("sarGrey puts backscatter on the grey axis", () => {
+  const vh = Float32Array.from([-30, -26]);
+  const vv = Float32Array.from([-12, -10]);
+  const ramp = { low: -12, high: -8 };
+  assert.deepEqual(sarGrey([vh, vv], ramp, 0, 1), [0, 0, 0], "at the low end");
+  assert.deepEqual(sarGrey([vh, vv], ramp, 1, 1), [128, 128, 128], "halfway");
 });
 
-test("sarColour paints a non-finite pixel black", () => {
+test("sarGrey paints a non-finite pixel black", () => {
   // sigma-nought in dB is negative everywhere, so the Sentinel-2 page's
   // "any channel above zero" validity test would black out every pixel.
-  const vh = Float32Array.from([NaN]);
-  const vv = Float32Array.from([-10]);
-  assert.deepEqual(
-    sarColour([vh, vv], { low: -20, high: -8, ratioLow: 0, ratioHigh: 1 }, 0),
-    [0, 0, 0]);
+  const vv = Float32Array.from([NaN]);
+  assert.deepEqual(sarGrey([vv, vv], { low: -20, high: -8 }, 0, 1), [0, 0, 0]);
 });
 
 test("convertChannel reproduces the dB transport this page uses", () => {

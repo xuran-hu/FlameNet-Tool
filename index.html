@@ -116,7 +116,7 @@
       </div>
 
       <div class="band-key" aria-label="Sentinel-1 dataset band order">
-        <span><b>VH</b> cross-pol dB → red</span><span><b>VV</b> co-pol dB → green</span><span><b>VH−VV</b> → blue</span><span><b>σ⁰</b>, no speckle filter, no terrain flattening</span>
+        <span><b>VH</b> cross-pol dB → model channel 1</span><span><b>VV</b> co-pol dB → model channel 2, and the panels below</span><span><b>σ⁰</b>, no speckle filter, no terrain flattening</span>
       </div>
 
       <div class="selection-summary">
@@ -128,8 +128,8 @@
       </div>
 
       <div class="canvas-grid">
-        <figure><div class="canvas-shell"><canvas id="pre-canvas"></canvas></div><figcaption><b>Selected pre-fire</b><span>VH / VV dB · joint 2–98% stretch</span></figcaption></figure>
-        <figure><div class="canvas-shell"><canvas id="current-canvas"></canvas></div><figcaption><b>Selected post-fire</b><span>VH / VV dB · joint 2–98% stretch</span></figcaption></figure>
+        <figure><div class="canvas-shell"><canvas id="pre-canvas"></canvas></div><figcaption><b>Selected pre-fire</b><span>VV dB · 2–98% grey stretch</span></figcaption></figure>
+        <figure><div class="canvas-shell"><canvas id="current-canvas"></canvas></div><figcaption><b>Selected post-fire</b><span>VV dB · 2–98% grey stretch</span></figcaption></figure>
         <figure><div class="canvas-shell"><canvas id="probability-canvas"></canvas></div><figcaption><b>Burn probability</b><span>Black → orange → white · grey excluded</span></figcaption></figure>
         <figure><div class="canvas-shell"><canvas id="mask-canvas"></canvas></div><figcaption><b>Binary prediction</b><span>White burned · black unburned</span></figcaption></figure>
       </div>

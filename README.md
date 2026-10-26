@@ -33,7 +33,8 @@ test/           node tests against the research implementation
 | Overpass | one date **and one relative orbit** is one scene; its granules are mosaicked. The training archive mosaicked by date alone, which mixes two geometries on 3 % of its tiles |
 | Pre-fire scene | the **previous year's fire season**. A lookback of weeks is wrong in Canada: many fires start in April–May, so the pre-image would be frozen or snow-covered ground and every pixel would read as change |
 | Orbit matching | the pre scene is taken from the **post scene's relative orbit** when that orbit flew in the search window (see below) |
-| Inference | 256 px patches, stride 128, Gaussian-blended, with the tile context encoder's output sampled at each patch's footprint, then components under 50 px dropped |
+| Inference | 256 px patches, stride 128, Gaussian-blended, with the tile context encoder's output sampled at each patch's footprint, then components under 50 px dropped. The window is inferred with a 128 px margin that is then cropped (see below) |
+| Display | VV in grey, 2–98 % stretch. The burn signal is a drop in backscatter, and brightness shows that directly where a colour composite turns it into a hue shift |
 
 Every one of those constants is read at page load from `model/model_meta.json`,
 which `scripts/export_onnx.py` in the FLAMENet repository writes directly from
@@ -49,11 +50,31 @@ barely works loses accuracy the same way. Only 67 % of the training archive's
 pairs match, so this page does better than the archive where the data allow,
 and says which orbits it used either way.
 
-### What this page cannot do that the Sentinel-2 page can
+### The window is inferred with a margin
 
-Report obscured pixels. Radar sees through cloud, so the only unseen pixels are
-those outside the swath; those are filled with the channel mean and will read
-as unburned. The no-data fraction of each selected scene is reported instead.
+Earth Engine is asked for one stride (128 px) more than the window on every
+side, and that band is cropped off after inference. Without it the Gaussian
+blend has almost no support at the border — measured on preset NT 523, the
+weight sum runs from **1.47 in the middle to 0.018 in the corner**, so single
+windows decide the border pixels and the stride lattice appears as a blocky
+ring. With the margin the weight sum across the displayed window is flat
+(1.289 everywhere on that scene, a 1.1× range against 80×). The margin shrinks
+to nothing at the largest window, where the fetch already sits at the Earth
+Engine cap.
+
+Faint axis-aligned steps can still appear *inside* the window at intermediate
+probabilities: the tile context is sampled once per patch, so neighbouring
+patches are modulated slightly differently. That is a property of the model,
+present in the research pipeline too, and the margin does not change it.
+
+### Instead of a cloud mask
+
+Radar sees through cloud, so there is nothing to mask for weather — but a
+window can still run off the edge of a swath. Those pixels are filled with the
+channel mean, which the network reads as "no change" and would otherwise score
+as unburned, so they are **excluded** and reported as outside the swath, which
+is what the Sentinel-2 page does with cloud. On preset NT 523 that is 4.7 % of
+the window, a diagonal wedge in one corner.
 
 ## Samples
 
