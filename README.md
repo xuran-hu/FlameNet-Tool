@@ -5,10 +5,9 @@ Engine supplies a pre/post SAR pair, `onnxruntime-web` runs the trained network
 on it, and the map is produced without any imagery or result leaving the
 machine.
 
-This directory is a fork of `../wildfire-earth-engine/` (FlameNet-S2), which is
-itself a fork of Ali Shibli's wildfire tool; `style.css` still imports that
-stylesheet from `../wildfire-demo/`. What changed here is the sensor, and with
-it everything the sensor implies.
+The page began as a fork of the FlameNet-S2 Earth Engine page, itself a fork of
+Ali Shibli's wildfire tool, whose stylesheet survives here as `base.css`. What
+changed is the sensor, and with it everything the sensor implies.
 
 ```
 index.html      the page
@@ -17,6 +16,7 @@ app.js          Earth Engine queries, the inference loop, rendering
 pipeline.js     the numeric core, with no DOM or network: testable in node
 model/          the exported graphs and the preprocessing constants
 samples/        the gallery's imagery
+base.css        the inherited stylesheet, imported by style.css
 test/           node tests against the research implementation
 ```
 
